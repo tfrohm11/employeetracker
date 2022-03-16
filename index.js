@@ -8,7 +8,7 @@ const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
   user: "root",
-  password: "YOURPASSWORD",
+  password: "Koopsta12",
   database: "employer_trackerDB"
 });
 
@@ -31,6 +31,7 @@ function mainMenu() {
         "Add Department",
         "Add Role",
         "Update Employee Role",
+        "Update Employee's Manager",
         "Exit"
       ]
     })
@@ -64,6 +65,10 @@ function mainMenu() {
           updateEmployeeRole();
           break;
 
+        case "update employee's manager":
+          updateManager();
+          break;
+
         case "Exit":
           connection.end();
           break;
@@ -79,7 +84,7 @@ function viewAllEmployees() {
   });
 }
 
-function viewAllDeptartments() {
+function viewAllDepartments() {
   const query = "SELECT * FROM department"
   connection.query(query, function (err, res) {
     console.table(res);
@@ -100,22 +105,22 @@ function addEmployee() {
     .prompt([
       {
         type: "input",
-        message: "Enter the employee's first name",
+        message: "Enter employee first name",
         name: "firstName"
       },
       {
         type: "input",
-        message: "Enter the employee's last name",
+        message: "Enter employee last name",
         name: "lastName"
       },
       {
         type: "input",
-        message: "Enter the employee's role ID",
+        message: "Enter employee role ID",
         name: "addEmployRole"
       },
       {
         type: "input",
-        message: "Enter the employee's manager ID",
+        message: "Enter employee manager ID",
         name: "addEmployMan"
       }
     ])
@@ -139,7 +144,7 @@ function addDepartment() {
   inquirer
     .prompt({
       type: "input",
-      message: "Enter the name of the new department",
+      message: "Enter name of new department",
       name: "newDepartment"
     })
     .then(function (res) {
@@ -199,7 +204,7 @@ function updateEmployeeRole() {
       },
       {
         type: "input",
-        message: "Enter the new role ID for employee",
+        message: "Enter new role ID for employee",
         name: "newRole"
       }
     ])
@@ -217,4 +222,61 @@ function updateEmployeeRole() {
       });
     }
 
-
+    const updateManager = ()=> {
+      //get all the employee list 
+      connection.query("SELECT * FROM EMPLOYEE", (err, emplRes) => {
+        if (err) throw err;
+        const employeeChoice = [];
+        emplRes.forEach(({ first_name, last_name, id }) => {
+          employeeChoice.push({
+            name: first_name + " " + last_name,
+            value: id
+          });
+        });
+        
+        const managerChoice = [{
+          name: 'None',
+          value: 0
+        }]; //an employee could have no manager
+        emplRes.forEach(({ first_name, last_name, id }) => {
+          managerChoice.push({
+            name: first_name + " " + last_name,
+            value: id
+          });
+        });
+         
+        let questions = [
+          {
+            type: "list",
+            name: "id",
+            choices: employeeChoice,
+            message: "who do you want to update?"
+          },
+          {
+            type: "list",
+            name: "manager_id",
+            choices: managerChoice,
+            message: "who is the employee's new manager?"
+          }
+        ]
+      
+        inquier.prompt(questions)
+          .then(response => {
+            const query = `UPDATE EMPLOYEE SET ? WHERE id = ?;`;
+            let manager_id = response.manager_id !== 0? response.manager_id: null;
+            connection.query(query, [
+              {manager_id: manager_id},
+              response.id
+            ], (err, res) => {
+              if (err) throw err;
+                
+              console.log("successfully updated employee's manager!");
+              startPrompt();
+            });
+          })
+          .catch(err => {
+            console.error(err);
+          });
+      })
+      
+    };
